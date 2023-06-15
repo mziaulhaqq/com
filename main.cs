@@ -1,4 +1,5 @@
-
+namespace Crm.Account.Integrator.Services.Cache
+{
 public abstract class RedisCacheBase
     {
         private readonly ILogger _logger;
@@ -51,3 +52,53 @@ public abstract class RedisCacheBase
               return SafeExecute(db => db.StringGet(key));
             }
     }
+}
+
+namespace Crm.Account.Integrator.Repositories
+{
+    public interface IBrandRepository
+    {
+        string Get(string code);
+    }
+}
+
+public class BrandRepository : IBrandRepository
+    {
+
+        public string Get(string code)
+        {
+            return "test";
+        }
+    }
+}
+
+namespace Crm.Account.Integrator.Repositories.Decorators
+{
+    public class CachedBrandRepository : IBrandRepository
+    {
+        private readonly BrandRepository _decorator;
+        private readonly IBrandCacheService _cache;
+
+        public CachedBrandRepository(BrandRepository decorator, IBrandCacheService cache)
+        {
+            _decorator = decorator;
+            _cache = cache;
+        }
+
+        public string Get(string code)
+        {
+            var brand = _cache.Get(code);
+            if (brand != null)
+            {
+                return brand;
+            }
+
+            var winBrand = _decorator.Get(code);
+
+            _cache.Add(winBrand, code);
+
+            return winBrand;
+        }
+    }
+}
+
